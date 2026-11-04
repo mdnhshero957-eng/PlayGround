@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0a0d" />
+  <title>Whispering Pines — Every House Is a Doom Level</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b0a0d'/%3E%3Cpath d='M16 4l9 9-9 15-9-15z' fill='%23b7f36a'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+<div id="app">
+  <canvas id="world" aria-label="Game world"></canvas>
+  <canvas id="fx"></canvas>
+  <div id="vignette"></div>
+  <div id="scanlines"></div>
+  <div id="markers"></div>
+
+  <!-- ============ NEIGHBORHOOD HUD ============ -->
+  <section id="hud-neighborhood" class="hud hidden">
+    <div class="panel nh-panel">
+      <div class="eyebrow">WHISPERING PINES ESTATES</div>
+      <h2 class="nh-title">Welcome home,<br><em>neighbor.</em></h2>
+      <div id="curse-row" class="curse-row"></div>
+      <div id="nh-status" class="nh-status">0 / 5 PROPERTIES CLEARED</div>
+    </div>
+
+    <div class="panel needs-panel">
+      <div class="eyebrow">SIM NEEDS</div>
+      <div class="need"><span>Mood</span><b class="mood-bad"><i class="plumbob-mini"></i> TERRIFIED</b></div>
+      <div class="need"><span>Rest</span><b id="need-rest">38%</b></div>
+      <div class="need"><span>Sanity</span><b class="mood-bad" id="need-sanity">12%</b></div>
+      <div class="need"><span>Property value</span><b id="need-value">$0</b></div>
+    </div>
+
+    <button id="map-btn" class="map-hint"><kbd>M</kbd><span>NEIGHBORHOOD MAP</span></button>
+
+    <div id="interact-prompt" class="prompt hidden">
+      <kbd>E</kbd><span id="prompt-text">Enter</span>
+    </div>
+    <div id="touch-enter" class="touch-enter hidden">ENTER</div>
+
+    <div id="dialogue" class="dialogue hidden">
+      <div class="dlg-name" id="dlg-name">MORTICIA · HOA LIAISON</div>
+      <div class="dlg-text" id="dlg-text"></div>
+      <div class="dlg-hint"><kbd>E</kbd> CONTINUE</div>
+    </div>
+
+    <div id="compass" class="compass hidden">
+      <div class="compass-ring"><div id="compass-arrow"></div></div>
+      <span id="compass-label">NO SIGNAL</span>
+    </div>
+  </section>
+
+  <!-- ============ LEVEL HUD ============ -->
+  <section id="hud-level" class="hud hidden">
+    <div class="obj-panel panel">
+      <div class="eyebrow" id="lh-address">12 CURSED COURT</div>
+      <div class="obj-title" id="lh-name">THE SPLIT-LEVEL OF SIN</div>
+      <div class="obj-line"><span class="obj-dot"></span><span id="lh-objective">Find the sigil key</span></div>
+      <div class="obj-sub" id="lh-sub">FIND THE KEY, THEN REACH THE PORTAL</div>
+    </div>
+
+    <div class="minimap-wrap panel">
+      <canvas id="minimap" width="168" height="168"></canvas>
+      <div class="minimap-label">FLOOR PLAN <span id="lh-floor">B1</span></div>
+    </div>
+    <button id="pause-btn" class="pause-btn" aria-label="Pause game">❚❚</button>
+
+    <div id="messages" class="messages"></div>
+    <div id="lock-hint" class="lock-hint hidden">CLICK TO LOOK · <kbd>ESC</kbd> TO PAUSE</div>
+
+    <div class="doom-hud">
+      <div class="doom-stat">
+        <div class="doom-label" id="hud-ammo-label">SHELLS</div>
+        <div class="doom-num" id="hud-ammo">30</div>
+      </div>
+      <div class="doom-stat">
+        <div class="doom-label">HEALTH</div>
+        <div class="doom-num hp" id="hud-health">100</div>
+      </div>
+      <div class="doom-center">
+        <canvas id="face" width="84" height="84"></canvas>
+        <div class="face-label" id="hud-mood">TERRIFIED</div>
+      </div>
+      <div class="doom-stat">
+        <div class="doom-label">ARMOR</div>
+        <div class="doom-num ar" id="hud-armor">0</div>
+      </div>
+      <div class="doom-stat wide">
+        <div class="doom-label">DEMONS</div>
+        <div class="doom-num" id="hud-kills">0 / 12</div>
+      </div>
+      <div class="doom-stat keys">
+        <div class="doom-label">SIGIL</div>
+        <div id="hud-key" class="key-slot">—</div>
+      </div>
+    </div>
+    <div class="weapon-strip">
+      <span id="weapon-name">SHOTGUN</span>
+      <span class="weapon-divider">/</span>
+      <span id="weapon-hint"><kbd>1</kbd><kbd>2</kbd> SWAP</span>
+    </div>
+  </section>
+
+  <!-- ============ TITLE ============ -->
+  <div id="title-screen" class="screen title-screen">
+    <div class="title-grain"></div>
+    <div class="title-inner">
+      <div class="kicker">A SUBURBAN SURVIVAL HORROR IN 3D</div>
+      <h1 class="logo">
+        <span class="logo-top">WHISPERING</span>
+        <span class="logo-bottom">PINES</span>
+      </h1>
+      <div class="title-rule"><i></i><span>❖</span><i></i></div>
+      <p class="tagline">Every house is a Doom level.</p>
+      <p class="blurb">A quiet cul-de-sac. Five open houses. One very active HOA.<br>Move in. Clear the demons. Improve property values.</p>
+      <button id="start-btn" class="btn btn-primary">MOVE IN</button>
+      <div class="title-meta">
+        <span><kbd>WASD</kbd> move</span>
+        <span><kbd>MOUSE</kbd> look</span>
+        <span><kbd>E</kbd> interact</span>
+        <span><kbd>M</kbd> map</span>
+      </div>
+      <div class="title-foot">
+        <button id="mute-btn" class="link-btn">SOUND: ON</button>
+        <span class="dot">·</span>
+        <button id="reset-btn" class="link-btn">RESET SAVE</button>
+        <span class="dot">·</span>
+        <span class="build">v1.0 — THE OPEN HOUSE</span>
+      </div>
+    </div>
+    <div class="title-scroll">BEST VIEWED WITH THE LIGHTS OFF</div>
+  </div>
+
+  <!-- ============ LEVEL INTRO ============ -->
+  <div id="level-intro" class="screen intro-screen hidden">
+    <div class="intro-card">
+      <div class="kicker" id="intro-address">12 CURSED COURT</div>
+      <h2 id="intro-name">THE SPLIT-LEVEL OF SIN</h2>
+      <div class="intro-rule"></div>
+      <p id="intro-tagline">4 bed · 2 bath · 1 bottomless pit</p>
+      <div class="intro-stats">
+        <div><span>CURSE LEVEL</span><b id="intro-difficulty">I</b></div>
+        <div><span>DEMON OCCUPANCY</span><b id="intro-demons">12</b></div>
+        <div><span>HOA STATUS</span><b id="intro-status">DELINQUENT</b></div>
+      </div>
+      <p class="intro-flavor" id="intro-flavor">The previous owners left in a hurry. Most of them.</p>
+      <button id="intro-btn" class="btn btn-primary">ENTER THE HOUSE</button>
+      <button id="intro-back" class="link-btn">← BACK TO THE NEIGHBORHOOD</button>
+    </div>
+  </div>
+
+  <!-- ============ PAUSE ============ -->
+  <div id="pause-menu" class="screen menu-screen hidden">
+    <div class="menu-card">
+      <div class="kicker">PROPERTY ON HOLD</div>
+      <h2>PAUSED</h2>
+      <button id="resume-btn" class="btn btn-primary">RESUME</button>
+      <button id="restart-btn" class="btn">RESTART HOUSE</button>
+      <button id="flee-btn" class="btn btn-ghost">FLEE TO NEIGHBORHOOD</button>
+      <div class="menu-controls">
+        <span><kbd>WASD</kbd> move</span><span><kbd>SHIFT</kbd> sprint</span>
+        <span><kbd>MOUSE</kbd> aim</span><span><kbd>CLICK</kbd> fire</span>
+        <span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> weapons</span><span><kbd>E</kbd> interact</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ RESULTS ============ -->
+  <div id="results" class="screen result-screen hidden">
+    <div class="result-card">
+      <div class="stamp">CLEARED</div>
+      <div class="kicker" id="res-address">12 CURSED COURT</div>
+      <h2 id="res-name">THE SPLIT-LEVEL OF SIN</h2>
+      <div class="result-grid">
+        <div><span>DEMONS EVICTED</span><b id="res-kills">12 / 12</b></div>
+        <div><span>ACCURACY</span><b id="res-acc">62%</b></div>
+        <div><span>TIME</span><b id="res-time">04:12</b></div>
+        <div><span>PROPERTY VALUE</span><b id="res-value">+$40,000</b></div>
+      </div>
+      <p id="res-flavor" class="result-flavor">The house is quiet now. Mostly.</p>
+      <button id="results-btn" class="btn btn-primary">BACK TO THE NEIGHBORHOOD</button>
+    </div>
+  </div>
+
+  <!-- ============ DEATH ============ -->
+  <div id="death" class="screen death-screen hidden">
+    <div class="death-card">
+      <div class="kicker">PROPERTY DAMAGE REPORT</div>
+      <h2>YOU DIED</h2>
+      <p>The house has claimed another first-time buyer.</p>
+      <div class="death-stats">
+        <span>DEMONS EVICTED: <b id="death-kills">0</b></span>
+        <span>KEYS FOUND: <b id="death-keys">0</b></span>
+      </div>
+      <button id="retry-btn" class="btn btn-primary">TRY AGAIN</button>
+      <button id="death-flee-btn" class="btn btn-ghost">FLEE TO NEIGHBORHOOD</button>
+    </div>
+  </div>
+
+  <!-- ============ ENDING ============ -->
+  <div id="ending" class="screen ending-screen hidden">
+    <div class="ending-card">
+      <div class="kicker">HOA ANNUAL REPORT · FISCAL YEAR OF THE BEAST</div>
+      <h2>THE CURSE<br>IS LIFTED</h2>
+      <p>Five houses cleansed. Property values up 400%. The cul-de-sac is quiet.<br>Somewhere, a lawnmower starts.</p>
+      <div class="result-grid">
+        <div><span>DEMONS EVICTED</span><b id="end-kills">0</b></div>
+        <div><span>HOUSES CLEARED</span><b>5 / 5</b></div>
+        <div><span>TOTAL TIME</span><b id="end-time">00:00</b></div>
+        <div><span>HOA DUES</span><b>PAID IN BLOOD</b></div>
+      </div>
+      <button id="ending-btn" class="btn btn-primary">ENJOY THE NEIGHBORHOOD</button>
+    </div>
+  </div>
+
+  <!-- ============ MAP ============ -->
+  <div id="map-modal" class="screen map-screen hidden">
+    <div class="map-card">
+      <div class="map-head">
+        <div>
+          <div class="kicker">ASSOCIATION DIRECTORY</div>
+          <h2>NEIGHBORHOOD MAP</h2>
+        </div>
+        <button id="map-close" class="link-btn">CLOSE ✕</button>
+      </div>
+      <div class="map-body">
+        <div class="map-canvas-wrap"><canvas id="map-draw" width="440" height="440"></canvas></div>
+        <div class="map-list" id="map-list"></div>
+      </div>
+      <div class="map-foot">TIP: THE MODEL HOME UNLOCKS WHEN THE OTHER FOUR ARE CLEARED.</div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <div id="fade"></div>
+
+  <!-- ============ TOUCH ============ -->
+  <div id="touch" class="touch hidden">
+    <div id="stick" class="stick"><div id="stick-knob" class="stick-knob"></div></div>
+    <div class="touch-right">
+      <button id="btn-fire" class="tbtn fire">FIRE</button>
+      <button id="btn-use" class="tbtn use">USE</button>
+      <button id="btn-swap" class="tbtn swap">SWAP</button>
+      <button id="btn-map" class="tbtn map">MAP</button>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+<script type="module" src="./src/game.js"></script>
+</body>
+</html>
